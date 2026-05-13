@@ -31,8 +31,19 @@ function App() {
   });
   const [error, setError] = useState(null);
   const [pendingServiceRecommendation, setPendingServiceRecommendation] = useState("");
+  const [feedbackGiven, setFeedbackGiven] = useState(false);
   
   const chatServiceRef = useRef(null);
+  const messagesEndRef = useRef(null);
+
+  // Auto-scroll to bottom when messages change
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, isLoading]);
 
   // Initialize chat service
   useEffect(() => {
@@ -340,6 +351,7 @@ function App() {
                     </div>
                   </div>
                 )}
+                <div ref={messagesEndRef} />
               </div>
 
               {/* Escalation Choice Buttons */}
@@ -375,64 +387,92 @@ function App() {
               {/* Feedback Buttons */}
               {showFeedback && !showLeadForm && !showEscalationPrompt && (
                 <div style={{ padding: '16px 20px', borderTop: '1px solid #e5e7eb' }}>
-                  <p style={{ fontSize: '14px', color: '#374151', marginBottom: '12px', textAlign: 'center' }}>
-                    Did you find this assistant helpful?
-                  </p>
-                  <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
-                    <button
-                      onClick={() => handleFeedback(true)}
-                      style={{
-                        padding: '10px 20px',
-                        background: '#007BFF',
-                        color: '#fff',
-                        border: 'none',
-                        borderRadius: '8px',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px'
-                      }}
-                    >
-                      <ThumbsUp size={16} /> Yes
-                    </button>
-                    <button
-                      onClick={() => handleFeedback(false)}
-                      style={{
-                        padding: '10px 20px',
-                        background: '#f9fafb',
-                        color: '#6b7280',
-                        border: '1px solid #e5e7eb',
-                        borderRadius: '8px',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px'
-                      }}
-                    >
-                      <ThumbsDown size={16} /> Not really
-                    </button>
-                  </div>
-                  <button
-                    onClick={handleShareWhatsApp}
-                    style={{
-                      width: '100%',
-                      marginTop: '12px',
-                      padding: '10px',
-                      background: '#25D366',
-                      color: '#fff',
-                      border: 'none',
-                      borderRadius: '8px',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '8px',
-                      fontSize: '14px',
-                      fontWeight: 600
-                    }}
-                  >
-                    <Share2 size={16} /> Share via WhatsApp
-                  </button>
+                  {!feedbackGiven ? (
+                    <>
+                      <p style={{ fontSize: '14px', color: '#374151', marginBottom: '12px', textAlign: 'center' }}>
+                        Did you find this assistant helpful?
+                      </p>
+                      <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+                        <button
+                          onClick={() => handleFeedback(true)}
+                          style={{
+                            padding: '10px 20px',
+                            background: '#007BFF',
+                            color: '#fff',
+                            border: 'none',
+                            borderRadius: '8px',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px'
+                          }}
+                        >
+                          <ThumbsUp size={16} /> Yes
+                        </button>
+                        <button
+                          onClick={() => handleFeedback(false)}
+                          style={{
+                            padding: '10px 20px',
+                            background: '#f9fafb',
+                            color: '#6b7280',
+                            border: '1px solid #e5e7eb',
+                            borderRadius: '8px',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px'
+                          }}
+                        >
+                          <ThumbsDown size={16} /> Not really
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <div style={{ textAlign: 'center' }}>
+                      <button
+                        onClick={handleShareWhatsApp}
+                        style={{
+                          width: '100%',
+                          padding: '12px',
+                          background: '#25D366',
+                          color: '#fff',
+                          border: 'none',
+                          borderRadius: '8px',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '8px',
+                          fontSize: '14px',
+                          fontWeight: 600,
+                          marginBottom: '8px'
+                        }}
+                      >
+                        <Share2 size={16} /> Share via WhatsApp
+                      </button>
+                      <button
+                        onClick={handleStartNewConversation}
+                        data-testid="start-new-conversation"
+                        style={{
+                          width: '100%',
+                          padding: '12px',
+                          background: '#007BFF',
+                          color: '#fff',
+                          border: 'none',
+                          borderRadius: '8px',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '8px',
+                          fontSize: '14px',
+                          fontWeight: 600
+                        }}
+                      >
+                        <MessageCircle size={16} /> Start New Conversation
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -561,6 +601,23 @@ function App() {
               )}
             </motion.div>
           )}
+        </AnimatePresence>
+
+        {/* Widget Trigger Button */}
+        <button
+          className="chat-widget-trigger"
+          data-testid="sleek-widget-trigger"
+          onClick={toggleWidget}
+        >
+          <MessageCircle size={28} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+export default App;
+
         </AnimatePresence>
 
         {/* Widget Trigger Button */}

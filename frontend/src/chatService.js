@@ -25,6 +25,7 @@ class ChatService {
     this.conversationHistory = [];
     this.clarificationCount = 0;
     this.useAPIfailed = false;
+    this.lastResponse = ''; // Track last response to avoid duplicates
   }
 
   generateSessionId() {
@@ -35,26 +36,40 @@ class ChatService {
   getFallbackResponse(userMessage) {
     const messageLower = userMessage.toLowerCase();
     
-    if (messageLower.includes('remote') || messageLower.includes('overseas') || messageLower.includes('abroad')) {
-      return FALLBACK_RESPONSES.remote;
-    }
-    if (messageLower.includes('cost') || messageLower.includes('price') || messageLower.includes('fee') || messageLower.includes('much')) {
-      return FALLBACK_RESPONSES.cost;
-    }
-    if (messageLower.includes('nominee') || messageLower.includes('director') || messageLower.includes('local director')) {
-      return FALLBACK_RESPONSES.nominee;
-    }
-    if (messageLower.includes('visa') || messageLower.includes('employment pass') || messageLower.includes('entrepass') || messageLower.includes('work pass')) {
-      return FALLBACK_RESPONSES.visa;
-    }
-    if (messageLower.includes('long') || messageLower.includes('time') || messageLower.includes('duration') || messageLower.includes('quick')) {
-      return FALLBACK_RESPONSES.timeline;
-    }
-    if (messageLower.includes('foreigner') || messageLower.includes('foreign') || messageLower.includes('international')) {
-      return FALLBACK_RESPONSES.foreigner;
+    // Short responses for yes/no/greetings
+    if (messageLower.match(/^(yes|yeah|yep|sure|ok|okay|hi|hello|hey)$/)) {
+      return "Great! What specific aspect of Singapore incorporation would you like to know more about? I can help with costs, timelines, requirements for foreigners, nominee directors, or the incorporation process.";
     }
     
-    return FALLBACK_RESPONSES.default;
+    if (messageLower.match(/^(no|nope|not now|maybe later)$/)) {
+      return "No problem! Feel free to ask any questions about Singapore incorporation whenever you're ready. I'm here to help!";
+    }
+    
+    let response;
+    
+    if (messageLower.includes('remote') || messageLower.includes('overseas') || messageLower.includes('abroad')) {
+      response = FALLBACK_RESPONSES.remote;
+    } else if (messageLower.includes('cost') || messageLower.includes('price') || messageLower.includes('fee') || messageLower.includes('much')) {
+      response = FALLBACK_RESPONSES.cost;
+    } else if (messageLower.includes('nominee') || messageLower.includes('director') || messageLower.includes('local director')) {
+      response = FALLBACK_RESPONSES.nominee;
+    } else if (messageLower.includes('visa') || messageLower.includes('employment pass') || messageLower.includes('entrepass') || messageLower.includes('work pass')) {
+      response = FALLBACK_RESPONSES.visa;
+    } else if (messageLower.includes('long') || messageLower.includes('time') || messageLower.includes('duration') || messageLower.includes('quick')) {
+      response = FALLBACK_RESPONSES.timeline;
+    } else if (messageLower.includes('foreigner') || messageLower.includes('foreign') || messageLower.includes('international')) {
+      response = FALLBACK_RESPONSES.foreigner;
+    } else {
+      response = FALLBACK_RESPONSES.default;
+    }
+    
+    // Avoid repeating same response
+    if (response === this.lastResponse) {
+      return "Is there anything else about Singapore incorporation I can help clarify? Feel free to ask about specific requirements, costs, or next steps!";
+    }
+    
+    this.lastResponse = response;
+    return response;
   }
 
   async sendMessage(userMessage) {
@@ -183,6 +198,8 @@ class ChatService {
     this.sessionId = this.generateSessionId();
     this.conversationHistory = [];
     this.clarificationCount = 0;
+    this.lastResponse = '';
+    this.useAPIfailed = false;
   }
 }
 
