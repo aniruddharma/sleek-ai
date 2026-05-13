@@ -6,11 +6,11 @@ import ChatService from "./chatService";
 import { detectServiceIntent, getServiceRecommendation } from "./knowledgeBase";
 
 const SUGGESTED_PROMPTS = [
-  "Can I incorporate remotely?",
-  "Do I need a nominee director?",
-  "How much does incorporation cost?",
-  "What visa do I need?",
-  "How long does setup take?"
+  "What's the complete incorporation process?",
+  "How long does incorporation take?",
+  "What documents do I need to start?",
+  "What are the mandatory requirements?",
+  "How much does everything cost?"
 ];
 
 function App() {
@@ -161,94 +161,94 @@ function App() {
   const getFollowUpQuestions = () => {
     const followUpMap = {
       'incorporation': [
-        "How much does incorporation cost?",
-        "Can I incorporate remotely?",
+        "What documents do I need?",
         "How long does the process take?",
-        "What documents do I need?"
+        "Can I incorporate remotely?",
+        "What are all the requirements?"
       ],
       'remote_incorporation': [
+        "What's the complete process?",
+        "How long will it take?",
         "Do I need a nominee director?",
-        "What are the costs involved?",
-        "Can I open a bank account remotely?",
-        "What visa options are available?"
+        "What documents are required?"
       ],
       'cost_pricing': [
-        "What's included in the package?",
-        "Are there any hidden fees?",
+        "What's included in the pricing?",
+        "How long does incorporation take?",
         "Can I incorporate remotely?",
-        "How long does setup take?"
+        "What are the requirements?"
       ],
       'nominee_director': [
-        "How much does a nominee director cost?",
-        "Can I be my own director later?",
-        "What are the visa requirements?",
-        "Do I need to visit Singapore?"
+        "What documents do I need?",
+        "How long does the process take?",
+        "Can I incorporate without visiting?",
+        "What are the mandatory requirements?"
       ],
       'visa_relocation': [
         "Can I incorporate without relocating?",
-        "What's the Employment Pass requirement?",
-        "How much does incorporation cost?",
-        "Do I need a nominee director?"
+        "What's the incorporation process?",
+        "How long does everything take?",
+        "What documents do I need?"
       ],
       'timeline_duration': [
-        "What documents do I need?",
-        "How much does it cost?",
-        "Can I expedite the process?",
-        "When can I open a bank account?"
+        "What's the step-by-step process?",
+        "What documents are required?",
+        "What are mandatory checks?",
+        "Can I incorporate remotely?"
       ],
       'foreigner_specific': [
+        "What's the complete process for foreigners?",
         "Do I need a nominee director?",
-        "Can I incorporate remotely?",
-        "What visa options do I have?",
-        "How much will it cost me?"
+        "How long will it take?",
+        "What documents do I need?"
       ],
       'requirements_documents': [
-        "Can I provide documents digitally?",
-        "How long does registration take?",
-        "What are the costs involved?",
-        "Can I incorporate remotely?"
+        "What's the complete process?",
+        "How long does it take?",
+        "Can I do this remotely?",
+        "What are Singapore's mandatory policies?"
       ],
       'process_steps': [
         "How long does each step take?",
-        "Can Sleek handle everything for me?",
-        "What does it cost?",
-        "Do I need to visit Singapore?"
+        "What documents do I need?",
+        "What are the requirements?",
+        "Can I incorporate remotely?"
       ],
       'banking': [
-        "Can I open an account remotely?",
-        "Which bank is best for startups?",
-        "What's the minimum balance required?",
-        "How long does approval take?"
+        "What's the incorporation process?",
+        "How long does incorporation take?",
+        "What documents are required?",
+        "What are the mandatory requirements?"
       ],
       'company_secretary': [
-        "Is secretary included in Sleek packages?",
-        "What does a secretary actually do?",
-        "How much does this cost separately?",
-        "When must I appoint one?"
+        "What's the complete process?",
+        "How long does incorporation take?",
+        "What are all requirements?",
+        "What documents do I need?"
       ],
       'tax_gst': [
-        "When do I need to register for GST?",
-        "What tax exemptions can I get?",
-        "How do I file taxes?",
-        "What's the corporate tax rate?"
+        "What's the incorporation process?",
+        "How long does it take?",
+        "What are the requirements?",
+        "What documents do I need?"
       ],
       'business_structures': [
-        "Why is Pte Ltd most popular?",
-        "What are the advantages?",
-        "How much does Pte Ltd cost?",
-        "Can foreigners own 100%?"
+        "What's the process to incorporate?",
+        "How long does it take?",
+        "What are the requirements?",
+        "What documents do I need?"
       ],
       'low_confidence': [
-        "Tell me about incorporation costs",
-        "Can foreigners incorporate in Singapore?",
-        "How long does incorporation take?",
-        "What are the requirements?"
+        "What's the incorporation process?",
+        "How long does it take?",
+        "What are the requirements?",
+        "What documents do I need?"
       ],
       'general': [
-        "How much does incorporation cost?",
-        "Can I incorporate remotely?",
-        "What if I'm a foreigner?",
-        "How long does it take?"
+        "What's the complete process?",
+        "How long does incorporation take?",
+        "What are the requirements?",
+        "What documents do I need?"
       ]
     };
 
@@ -380,12 +380,12 @@ function App() {
       <section className="sleek-hero">
         <div className="sleek-hero-content">
           <h1>
-            Singapore Company<br />
-            Registration Cost:<br />
-            Complete 2026 Guide
+            Complete Singapore<br />
+            Business Incorporation<br />
+            & Onboarding Assistant
           </h1>
           <p>
-            Get instant answers about Singapore incorporation costs, requirements, and setup from our AI-powered assistant. Available 24/7 to help you start your business journey.
+            AI-powered guidance for early-stage founders and entrepreneurs. Get instant answers about the entire incorporation journey: process, requirements, timeline, costs, compliance, and Singapore policies—all in one place.
           </p>
           <button
             className="sleek-cta"
@@ -393,7 +393,7 @@ function App() {
             onClick={toggleWidget}
           >
             <MessageCircle size={20} />
-            Ask the AI Assistant
+            Start Your Incorporation Journey
           </button>
         </div>
         
