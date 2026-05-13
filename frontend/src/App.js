@@ -32,7 +32,9 @@ function App() {
   const [error, setError] = useState(null);
   const [pendingServiceRecommendation, setPendingServiceRecommendation] = useState("");
   const [feedbackGiven, setFeedbackGiven] = useState(false);
-  const [userDeclinedAgent, setUserDeclinedAgent] = useState(false); // Track if user said no to agent
+  const [userDeclinedAgent, setUserDeclinedAgent] = useState(false);
+  const [lastQueryCategory, setLastQueryCategory] = useState('');
+  const [showFollowUpPrompts, setShowFollowUpPrompts] = useState(false);
   
   const chatServiceRef = useRef(null);
   const messagesEndRef = useRef(null);
@@ -302,16 +304,17 @@ function App() {
     existingFeedback.push(feedback);
     localStorage.setItem('sleek_feedback', JSON.stringify(existingFeedback));
     
+    setFeedbackGiven(true);
+    
     const thankYouMsg = {
       id: Date.now().toString(),
       role: 'assistant',
       content: liked 
-        ? "Thank you for the positive feedback! Would you like to share this AI assistant with others who might find it helpful?" 
-        : "Thank you for your feedback. We're constantly improving! Would you still like to share this tool with others?",
+        ? "Thank you for the positive feedback! 😊" 
+        : "Thank you for your feedback. We're constantly improving!",
       timestamp: new Date().toISOString()
     };
     setMessages(prev => [...prev, thankYouMsg]);
-    setShowFeedback(false);
   };
 
   const handleShareWhatsApp = () => {
@@ -324,6 +327,28 @@ function App() {
 
   const handlePromptClick = (prompt) => {
     handleSendMessage(prompt);
+    setShowFollowUpPrompts(false);
+  };
+
+  const handleStartNewConversation = () => {
+    chatServiceRef.current.resetSession();
+    setMessages([]);
+    setShowEscalationPrompt(false);
+    setShowLeadForm(false);
+    setShowHandoff(false);
+    setShowFeedback(false);
+    setFeedbackGiven(false);
+    setUserDeclinedAgent(false);
+    setShowFollowUpPrompts(false);
+    setLastQueryCategory('');
+    setError(null);
+    setLeadFormData({
+      full_name: "",
+      contact_number: "",
+      business_name: "",
+      nationality: ""
+    });
+    sendWelcomeMessage();
   };
 
   const toggleWidget = () => {
