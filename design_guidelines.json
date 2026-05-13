@@ -1,0 +1,103 @@
+{
+  "project_name": "Sleek Start",
+  "theme": "light",
+  "archetype": "1 (Organic & Earthy)",
+  "typography": {
+    "headings": {
+      "fontFamily": "Outfit",
+      "weights": ["400", "600", "700"],
+      "classes": "font-sans tracking-tight leading-none text-[#123524]"
+    },
+    "body": {
+      "fontFamily": "Manrope",
+      "weights": ["400", "500", "600"],
+      "classes": "font-sans leading-relaxed text-[#2C3E35]"
+    },
+    "labels": {
+      "classes": "uppercase tracking-[0.2em] text-xs font-semibold text-[#4A5D53]"
+    }
+  },
+  "colors": {
+    "background": {
+      "main": "#FDFBF7",
+      "secondary": "#F4F1E9",
+      "glass": "rgba(253, 251, 247, 0.75)"
+    },
+    "text": {
+      "primary": "#123524",
+      "secondary": "#4A5D53",
+      "inverse": "#FDFBF7"
+    },
+    "brand": {
+      "primary": "#123524",
+      "accent": "#C65D47",
+      "border": "rgba(18, 53, 36, 0.08)"
+    }
+  },
+  "layout": {
+    "spacing": "Generous. Use p-6, p-8, p-12. Widget interior padding should be p-6.",
+    "radius": "rounded-2xl for main widget, rounded-full for action pills, rounded-xl for chat bubbles.",
+    "alignment": "Left-align dense text and messages for readability. Optical alignment on buttons."
+  },
+  "surfaces": {
+    "widget_container": "Crystal Glass variant: backdrop-blur-xl bg-[#FDFBF7]/80 border border-white/40 shadow-[0_8px_32px_rgba(18,53,36,0.08)]",
+    "inputs": "Flat Solid variant: bg-[#F4F1E9] border border-black/5 hover:border-[#123524]/20 focus:border-[#C65D47] focus:ring-1 focus:ring-[#C65D47]"
+  },
+  "components": {
+    "widget_trigger": {
+      "style": "Bottom-right fixed placement. Pill shape initially 'Chat with Sleek AI', transitions to circle/icon on scroll or close. Deep forest green (#123524) background with white text.",
+      "behavior": "Auto-opens on first visit after 1-second delay."
+    },
+    "chat_message_ai": {
+      "style": "Left-aligned. No heavy background. Use a crisp typography approach with a 1px left-border or indented style, accompanied by the AI minimal avatar."
+    },
+    "chat_message_user": {
+      "style": "Right-aligned. Solid warm sand background (#F4F1E9), text-[#123524]. Rounded corners with a sharp bottom-right corner."
+    },
+    "suggested_prompts": {
+      "style": "Horizontal list of pills. border border-[#123524]/10 bg-transparent text-[#4A5D53] hover:bg-[#123524]/5 hover:text-[#123524] transition-all."
+    },
+    "lead_capture_form": {
+      "style": "Embedded natively in the chat flow. Uses Shadcn form components customized to match the 'inputs' surface strategy."
+    }
+  },
+  "animations": {
+    "library": "framer-motion",
+    "widget_entrance": "Slide up from bottom and subtle scale up (y: 20, opacity: 0 -> y: 0, opacity: 1).",
+    "messages": "Staggered fade-up per message (y: 10, opacity: 0).",
+    "prompts": "Hover scale slightly (scale: 1.02)."
+  },
+  "media": {
+    "hero_background_texture": {
+      "url": "https://images.unsplash.com/photo-1777624627013-d5cc4d064223?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDk1ODB8MHwxfHNlYXJjaHwxfHxhYnN0cmFjdCUyMHNhbmQlMjB0ZXh0dXJlfGVufDB8fHx8MTc3ODY1MzM2NXww&ixlib=rb-4.1.0&q=85",
+      "description": "Abstract sand texture for subtle background grounding"
+    },
+    "singapore_office_skyline": {
+      "url": "https://images.unsplash.com/photo-1606792956313-75b9e03c7297?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA3MDR8MHwxfHNlYXJjaHwxfHxzaW5nYXBvcmUlMjBvZmZpY2UlMjBza3lsaW5lfGVufDB8fHx8MTc3ODY1MzM0M3ww&ixlib=rb-4.1.0&q=85",
+      "description": "Singapore modern office skyline for landing page context"
+    },
+    "founders_working": {
+      "url": "https://images.unsplash.com/photo-1702301266409-ed1bfe210971?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1NTN8MHwxfHNlYXJjaHwyfHxmb3VuZGVycyUyMHdvcmtpbmclMjBsYXB0b3B8ZW58MHx8fHwxNzc4NjUzMzQzfDA&ixlib=rb-4.1.0&q=85",
+      "description": "Founders at work"
+    },
+    "ai_avatar_icon": {
+      "url": "https://images.unsplash.com/photo-1618243329711-359c196ffb38?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2NjZ8MHwxfHNlYXJjaHwxfHxyb2JvdCUyMGNoYXQlMjBpY29uJTIwbWluaW1hbGlzdGljfGVufDB8fHx8MTc3ODY1MzM2Nnww&ixlib=rb-4.1.0&q=85",
+      "description": "Minimalist geometric square icon for AI avatar"
+    }
+  },
+  "icons": {
+    "library": "lucide-react",
+    "usage": "Use crisp, standard strokes. Size mostly 16px to 20px."
+  },
+  "accessibility_and_testing": {
+    "contrast": "Ensure Terracotta (#C65D47) and Deep Forest (#123524) have proper contrast against Bone White (#FDFBF7).",
+    "testing_attributes": "All interactive elements (widget trigger, inputs, send buttons, prompts) MUST include 'data-testid' (e.g., 'data-testid=\"sleek-widget-trigger\"')."
+  },
+  "instructions_to_main_agent": [
+    "1. Contextual Landing Page: Build a simple, premium landing page representing Sleek Start using the provided images to give the widget context.",
+    "2. Widget Initialization: Implement the floating chat widget on the bottom right. It must auto-open upon first load with a Framer Motion staggered entrance.",
+    "3. Styling Constraints: Adhere strictly to the 'Organic & Earthy' color palette. DO NOT use generic SaaS blue, purple, or teal.",
+    "4. Component Architecture: Use purely customized Shadcn UI components for interactive logic (Forms, Inputs, ScrollArea). Override Shadcn's default Vercel-look with our specific rounded classes and organic borders.",
+    "5. Conversation Flow: Support max 3 clarification questions natively before showing the embedded Lead Capture form. Once form is submitted, show a 'handoff to human' success state."
+  ]
+}
