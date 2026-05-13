@@ -100,17 +100,13 @@ function App() {
 
       setMessages(prev => [...prev, aiMsg]);
 
-      // Show escalation prompt only if:
-      // 1. User hasn't previously declined AND
-      // 2. (User shows purchase intent OR we've given 2+ responses)
-      if (!userDeclinedAgent && result.shouldEscalate) {
+      // Always show agent connection prompt after providing answer (except for greetings)
+      if (result.shouldEscalate && !userDeclinedAgent) {
         setTimeout(() => {
           const escalationMsg = {
             id: (Date.now() + 2).toString(),
             role: 'assistant',
-            content: result.hasPurchaseIntent 
-              ? "I can help connect you with a Sleek expert who can assist you with this. Would you like to speak with them?"
-              : "Would you like me to connect you with a Sleek incorporation expert for personalized guidance?",
+            content: "Would you like me to connect you with a Sleek incorporation expert for personalized guidance?",
             timestamp: new Date().toISOString()
           };
           setMessages(prev => [...prev, escalationMsg]);

@@ -85,39 +85,69 @@ class ChatService {
   getFallbackResponse(userMessage) {
     const messageLower = userMessage.toLowerCase();
     
-    // Short responses for yes/no/greetings
-    if (messageLower.match(/^(yes|yeah|yep|sure|ok|okay|hi|hello|hey)$/)) {
-      return "Great! What specific aspect of Singapore incorporation would you like to know more about? I can help with costs, timelines, requirements for foreigners, nominee directors, or the incorporation process.";
+    // Short acknowledgment for yes/no/greetings
+    if (messageLower.match(/^(yes|yeah|yep|sure|ok|okay)$/)) {
+      return {
+        answer: "Great! What would you like to know about Singapore incorporation?",
+        service: "",
+        offering: "general"
+      };
     }
     
     if (messageLower.match(/^(no|nope|not now|maybe later)$/)) {
-      return "No problem! Feel free to ask any questions about Singapore incorporation whenever you're ready. I'm here to help!";
+      return {
+        answer: "No problem! Feel free to ask any questions about Singapore incorporation.",
+        service: "",
+        offering: "general"
+      };
+    }
+    
+    if (messageLower.match(/^(hi|hello|hey|thanks|thank you)$/)) {
+      return {
+        answer: "Hello! 👋 I'm here to help you with Singapore company incorporation. What would you like to know?",
+        service: "",
+        offering: "general"
+      };
     }
     
     let response;
     
-    if (messageLower.includes('remote') || messageLower.includes('overseas') || messageLower.includes('abroad')) {
+    // Comprehensive keyword matching with more patterns
+    if (messageLower.includes('requirement') || messageLower.includes('what do i need') || messageLower.includes('documents') || messageLower.includes('necessary')) {
+      response = FALLBACK_RESPONSES.requirements;
+    } else if (messageLower.includes('remote') || messageLower.includes('overseas') || messageLower.includes('abroad') || messageLower.includes('online') || messageLower.includes('from outside') || messageLower.includes('without visit')) {
       response = FALLBACK_RESPONSES.remote;
-    } else if (messageLower.includes('cost') || messageLower.includes('price') || messageLower.includes('fee') || messageLower.includes('much')) {
+    } else if (messageLower.includes('cost') || messageLower.includes('price') || messageLower.includes('fee') || messageLower.includes('much') || messageLower.includes('expensive') || messageLower.includes('cheap') || messageLower.includes('afford')) {
       response = FALLBACK_RESPONSES.cost;
-    } else if (messageLower.includes('nominee') || messageLower.includes('director') || messageLower.includes('local director')) {
+    } else if (messageLower.includes('nominee') || messageLower.includes('director') || messageLower.includes('local director') || messageLower.includes('resident director')) {
       response = FALLBACK_RESPONSES.nominee;
-    } else if (messageLower.includes('visa') || messageLower.includes('employment pass') || messageLower.includes('entrepass') || messageLower.includes('work pass')) {
+    } else if (messageLower.includes('visa') || messageLower.includes('employment pass') || messageLower.includes('entrepass') || messageLower.includes('work pass') || messageLower.includes('relocat') || messageLower.includes('move to singapore')) {
       response = FALLBACK_RESPONSES.visa;
-    } else if (messageLower.includes('long') || messageLower.includes('time') || messageLower.includes('duration') || messageLower.includes('quick')) {
+    } else if (messageLower.includes('long') || messageLower.includes('time') || messageLower.includes('duration') || messageLower.includes('quick') || messageLower.includes('fast') || messageLower.includes('how soon') || messageLower.includes('when')) {
       response = FALLBACK_RESPONSES.timeline;
-    } else if (messageLower.includes('foreigner') || messageLower.includes('foreign') || messageLower.includes('international')) {
+    } else if (messageLower.includes('foreigner') || messageLower.includes('foreign') || messageLower.includes('international') || messageLower.includes('expat') || messageLower.includes('non-resident') || messageLower.includes('not from singapore')) {
       response = FALLBACK_RESPONSES.foreigner;
+    } else if (messageLower.includes('process') || messageLower.includes('step') || messageLower.includes('how to') || messageLower.includes('procedure') || messageLower.includes('register') || messageLower.includes('start company')) {
+      response = FALLBACK_RESPONSES.requirements;
+    } else if (messageLower.includes('bank') || messageLower.includes('account') || messageLower.includes('banking')) {
+      response = {
+        answer: "🏦 Business Bank Account:\n\n• Open after company registration\n• Takes 1-2 weeks\n• Need: UEN, Bizfile profile, ID documents\n• Most banks: DBS, OCBC, UOB\n• Sleek offers free Business Account",
+        service: "Sleek's free Business Account makes banking setup seamless with no minimum balance requirements.",
+        offering: "banking"
+      };
+    } else if (messageLower.includes('secretary') || messageLower.includes('compliance') || messageLower.includes('annual return')) {
+      response = {
+        answer: "📝 Company Secretary:\n\n• Required within 6 months\n• Handles ACRA filings\n• Maintains compliance\n• Files Annual Returns\n• Cost: S$300-1,500/year",
+        service: "All Sleek packages include professional company secretary services.",
+        offering: "secretary"
+      };
+    } else if (messageLower.includes('tax') || messageLower.includes('gst') || messageLower.includes('benefit') || messageLower.includes('advantage')) {
+      response = FALLBACK_RESPONSES.default;
     } else {
+      // Always return default, never blank
       response = FALLBACK_RESPONSES.default;
     }
     
-    // Avoid repeating same response
-    if (response === this.lastResponse) {
-      return "Is there anything else about Singapore incorporation I can help clarify? Feel free to ask about specific requirements, costs, or next steps!";
-    }
-    
-    this.lastResponse = response;
     return response;
   }
 
@@ -172,17 +202,14 @@ class ChatService {
       // Increment response count
       this.responseCount++;
 
-      // Decide if should escalate:
-      // 1. If user shows purchase intent
-      // 2. OR if we've given 2+ responses and it's not just a greeting
-      const hasPurchaseIntent = this.detectPurchaseIntent(userMessage);
-      const shouldEscalate = hasPurchaseIntent || (this.responseCount >= 2 && serviceOffering !== 'general');
+      // Always suggest agent connection (except for greetings) with service recommendations
+      const shouldEscalate = serviceOffering !== 'general';
 
       return {
         response: assistantMessage,
         clarificationCount: this.clarificationCount,
         shouldEscalate: shouldEscalate,
-        hasPurchaseIntent: hasPurchaseIntent
+        serviceOffering: serviceOffering
       };
 
     } catch (error) {
@@ -203,7 +230,7 @@ class ChatService {
         response: fallbackMessage,
         clarificationCount: this.clarificationCount,
         shouldEscalate: fallbackData.offering !== 'general',
-        hasPurchaseIntent: false
+        serviceOffering: fallbackData.offering
       };
     }
   }
