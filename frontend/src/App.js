@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import "@/App.css";
 import { motion, AnimatePresence } from "framer-motion";
-import { MessageCircle, X, Send, CheckCircle } from "lucide-react";
+import { MessageCircle, X, Send, CheckCircle, ThumbsUp, ThumbsDown, Share2 } from "lucide-react";
 import ChatService from "./chatService";
 import { detectServiceIntent, getServiceRecommendation } from "./knowledgeBase";
 
@@ -18,8 +18,10 @@ function App() {
   const [inputMessage, setInputMessage] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [showEscalationPrompt, setShowEscalationPrompt] = useState(false);
   const [showLeadForm, setShowLeadForm] = useState(false);
   const [showHandoff, setShowHandoff] = useState(false);
+  const [showFeedback, setShowFeedback] = useState(false);
   const [conversationSummary, setConversationSummary] = useState("");
   const [leadFormData, setLeadFormData] = useState({
     full_name: "",
@@ -28,6 +30,7 @@ function App() {
     nationality: ""
   });
   const [error, setError] = useState(null);
+  const [pendingServiceRecommendation, setPendingServiceRecommendation] = useState("");
   
   const chatServiceRef = useRef(null);
 
@@ -90,36 +93,66 @@ function App() {
       if (serviceIntent) {
         const recommendation = getServiceRecommendation(serviceIntent);
         if (recommendation) {
-          const serviceMsg = {
-            id: (Date.now() + 2).toString(),
-            role: 'service',
-            content: recommendation,
-            timestamp: new Date().toISOString()
-          };
-          setMessages(prev => [...prev, serviceMsg]);
+          setPendingServiceRecommendation(recommendation);
+          
+          // Add AI message asking if user wants to connect with expert
+          setTimeout(() => {
+            const escalationMsg = {
+              id: (Date.now() + 3).toString(),
+              role: 'assistant',
+              content: `${recommendation}\n\nWould you like me to connect you with a Sleek expert who can provide more detailed guidance and help you get started?`,
+              timestamp: new Date().toISOString()
+            };
+            setMessages(prev => [...prev, escalationMsg]);
+            setShowEscalationPrompt(true);
+          }, 1000);
         }
       }
 
-      // Show lead form if should escalate
-      if (result.shouldEscalate || serviceIntent) {
+      // Show escalation prompt if should escalate (but NOT immediately showing form)
+      if (result.shouldEscalate && !serviceIntent) {
         setTimeout(() => {
-          setShowLeadForm(true);
-        }, 1500);
+          const escalationMsg = {
+            id: (Date.now() + 2).toString(),
+            role: 'assistant',
+            content: "I can provide general information, but for more specific guidance tailored to your situation, I can connect you with a Sleek incorporation expert. Would you like to speak with them?",
+            timestamp: new Date().toISOString()
+          };
+          setMessages(prev => [...prev, escalationMsg]);
+          setShowEscalationPrompt(true);
+        }, 1000);
       }
 
     } catch (error) {
       console.error('Error sending message:', error);
       setError('Unable to connect to AI service. Please try again.');
-      const errorMsg = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: "I apologize for the inconvenience. Let me connect you with a Sleek expert who can assist you better.",
-        timestamp: new Date().toISOString()
-      };
-      setMessages(prev => [...prev, errorMsg]);
-      setShowLeadForm(true);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleEscalationChoice = (choice) => {
+    setShowEscalationPrompt(false);
+    
+    if (choice === 'yes') {
+      // User wants to connect with expert
+      const responseMsg = {
+        id: Date.now().toString(),
+        role: 'assistant',
+        content: "Great! Let me collect a few details so our expert can provide you with personalized assistance.",
+        timestamp: new Date().toISOString()
+      };
+      setMessages(prev => [...prev, responseMsg]);
+      setShowLeadForm(true);
+    } else {
+      // User wants to continue with AI
+      const responseMsg = {
+        id: Date.now().toString(),
+        role: 'assistant',
+        content: "No problem! I'm here to help. What else would you like to know about Singapore incorporation?",
+        timestamp: new Date().toISOString()
+      };
+      setMessages(prev => [...prev, responseMsg]);
     }
   };
 
@@ -132,7 +165,7 @@ function App() {
       const summary = chatServiceRef.current.getConversationSummary();
       setConversationSummary(summary);
 
-      // Store lead in localStorage (in production, you'd send to a backend/form service)
+      // Store lead in localStorage
       const lead = {
         ...leadFormData,
         conversation_summary: summary,
@@ -147,12 +180,49 @@ function App() {
 
       setShowLeadForm(false);
       setShowHandoff(true);
+      
+      // Show feedback after handoff
+      setTimeout(() => {
+        setShowFeedback(true);
+      }, 3000);
+      
     } catch (error) {
       console.error('Error submitting lead:', error);
       setError('Unable to submit form. Please contact us at hello@sleek.com');
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleFeedback = (liked) => {
+    const feedback = {
+      liked,
+      timestamp: new Date().toISOString(),
+      conversationLength: messages.length
+    };
+    
+    const existingFeedback = JSON.parse(localStorage.getItem('sleek_feedback') || '[]');
+    existingFeedback.push(feedback);
+    localStorage.setItem('sleek_feedback', JSON.stringify(existingFeedback));
+    
+    const thankYouMsg = {
+      id: Date.now().toString(),
+      role: 'assistant',
+      content: liked 
+        ? "Thank you for the positive feedback! Would you like to share this AI assistant with others who might find it helpful?" 
+        : "Thank you for your feedback. We're constantly improving! Would you still like to share this tool with others?",
+      timestamp: new Date().toISOString()
+    };
+    setMessages(prev => [...prev, thankYouMsg]);
+    setShowFeedback(false);
+  };
+
+  const handleShareWhatsApp = () => {
+    const shareText = encodeURIComponent(
+      "Check out Sleek's AI Assistant for Singapore company incorporation! Get instant answers about costs, requirements, and setup. " +
+      window.location.href
+    );
+    window.open(`https://wa.me/?text=${shareText}`, '_blank');
   };
 
   const handlePromptClick = (prompt) => {
@@ -253,20 +323,12 @@ function App() {
                       className={`chat-message ${msg.role}`}
                       data-testid={`chat-message-${msg.role}`}
                     >
-                      {msg.role === 'service' ? (
-                        <div className="service-recommendation" data-testid="service-recommendation">
-                          {msg.content}
-                        </div>
-                      ) : (
-                        <>
-                          <div className={`message-avatar ${msg.role}`}>
-                            {msg.role === 'assistant' ? '🤖' : '👤'}
-                          </div>
-                          <div className={`message-content ${msg.role}`}>
-                            {msg.content}
-                          </div>
-                        </>
-                      )}
+                      <div className={`message-avatar ${msg.role}`}>
+                        {msg.role === 'assistant' ? '🤖' : '👤'}
+                      </div>
+                      <div className={`message-content ${msg.role}`}>
+                        {msg.content}
+                      </div>
                     </div>
                   ))}
                 </AnimatePresence>
@@ -280,8 +342,102 @@ function App() {
                 )}
               </div>
 
+              {/* Escalation Choice Buttons */}
+              {showEscalationPrompt && (
+                <div style={{ padding: '16px 20px', borderTop: '1px solid #e5e7eb', display: 'flex', gap: '8px' }}>
+                  <button
+                    onClick={() => handleEscalationChoice('yes')}
+                    className="sleek-cta"
+                    style={{ flex: 1, padding: '10px', fontSize: '14px' }}
+                    data-testid="escalation-yes"
+                  >
+                    Yes, connect me
+                  </button>
+                  <button
+                    onClick={() => handleEscalationChoice('no')}
+                    style={{
+                      flex: 1,
+                      padding: '10px',
+                      fontSize: '14px',
+                      background: '#f9fafb',
+                      border: '1px solid #e5e7eb',
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      color: '#6b7280'
+                    }}
+                    data-testid="escalation-no"
+                  >
+                    No, continue here
+                  </button>
+                </div>
+              )}
+
+              {/* Feedback Buttons */}
+              {showFeedback && !showLeadForm && !showEscalationPrompt && (
+                <div style={{ padding: '16px 20px', borderTop: '1px solid #e5e7eb' }}>
+                  <p style={{ fontSize: '14px', color: '#374151', marginBottom: '12px', textAlign: 'center' }}>
+                    Did you find this assistant helpful?
+                  </p>
+                  <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+                    <button
+                      onClick={() => handleFeedback(true)}
+                      style={{
+                        padding: '10px 20px',
+                        background: '#007BFF',
+                        color: '#fff',
+                        border: 'none',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px'
+                      }}
+                    >
+                      <ThumbsUp size={16} /> Yes
+                    </button>
+                    <button
+                      onClick={() => handleFeedback(false)}
+                      style={{
+                        padding: '10px 20px',
+                        background: '#f9fafb',
+                        color: '#6b7280',
+                        border: '1px solid #e5e7eb',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px'
+                      }}
+                    >
+                      <ThumbsDown size={16} /> Not really
+                    </button>
+                  </div>
+                  <button
+                    onClick={handleShareWhatsApp}
+                    style={{
+                      width: '100%',
+                      marginTop: '12px',
+                      padding: '10px',
+                      background: '#25D366',
+                      color: '#fff',
+                      border: 'none',
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px',
+                      fontSize: '14px',
+                      fontWeight: 600
+                    }}
+                  >
+                    <Share2 size={16} /> Share via WhatsApp
+                  </button>
+                </div>
+              )}
+
               {/* Suggested Prompts */}
-              {messages.length === 1 && !isLoading && (
+              {messages.length === 1 && !isLoading && !showLeadForm && !showEscalationPrompt && (
                 <div className="suggested-prompts">
                   {SUGGESTED_PROMPTS.map((prompt, idx) => (
                     <button
@@ -364,7 +520,7 @@ function App() {
                     <CheckCircle size={28} />
                   </div>
                   <h3>Connecting you to a Sleek expert...</h3>
-                  <p>Thank you for your interest! A Sleek incorporation specialist will reach out to you shortly with personalized guidance.</p>
+                  <p>Thank you! A Sleek incorporation specialist will reach out to you shortly with personalized guidance.</p>
                   {conversationSummary && (
                     <div className="conversation-summary">
                       <p className="conversation-summary-label">Conversation Summary:</p>
@@ -375,7 +531,7 @@ function App() {
               )}
 
               {/* Input Area */}
-              {!showLeadForm && !showHandoff && (
+              {!showLeadForm && !showHandoff && !showEscalationPrompt && (
                 <div className="chat-input-area">
                   <div className="chat-input-wrapper">
                     <textarea
