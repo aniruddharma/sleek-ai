@@ -100,8 +100,8 @@ function App() {
 
       setMessages(prev => [...prev, aiMsg]);
 
-      // Always show agent connection prompt after providing answer (except for greetings)
-      if (result.shouldEscalate && !userDeclinedAgent) {
+      // ALWAYS show agent connection after answer (remove decline check)
+      if (result.shouldEscalate) {
         setTimeout(() => {
           const escalationMsg = {
             id: (Date.now() + 2).toString(),
@@ -319,7 +319,12 @@ function App() {
                         {msg.role === 'assistant' ? '🤖' : '👤'}
                       </div>
                       <div className={`message-content ${msg.role}`}>
-                        {msg.content}
+                        {msg.content.split('\n').map((line, idx) => (
+                          <span key={idx}>
+                            {line}
+                            {idx < msg.content.split('\n').length - 1 && <br />}
+                          </span>
+                        ))}
                       </div>
                     </div>
                   ))}
