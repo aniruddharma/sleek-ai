@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import "@/App.css";
 import { motion, AnimatePresence } from "framer-motion";
 import { MessageCircle, X, Send, CheckCircle, ThumbsUp, ThumbsDown, Share2 } from "lucide-react";
+import { Analytics } from "@vercel/analytics/react";
 import ChatService from "./chatService";
 import { detectServiceIntent, getServiceRecommendation } from "./knowledgeBase";
 
@@ -863,6 +864,7 @@ function App() {
           <MessageCircle size={28} />
         </button>
       </div>
+      <Analytics />
     </div>
   );
 }
