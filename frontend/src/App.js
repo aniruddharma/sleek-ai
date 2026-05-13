@@ -99,39 +99,18 @@ function App() {
 
       setMessages(prev => [...prev, aiMsg]);
 
-      // Detect service intent
-      const serviceIntent = detectServiceIntent(text);
-      if (serviceIntent) {
-        const recommendation = getServiceRecommendation(serviceIntent);
-        if (recommendation) {
-          setPendingServiceRecommendation(recommendation);
-          
-          // Add AI message asking if user wants to connect with expert
-          setTimeout(() => {
-            const escalationMsg = {
-              id: (Date.now() + 3).toString(),
-              role: 'assistant',
-              content: `${recommendation}\n\nWould you like me to connect you with a Sleek expert who can provide more detailed guidance and help you get started?`,
-              timestamp: new Date().toISOString()
-            };
-            setMessages(prev => [...prev, escalationMsg]);
-            setShowEscalationPrompt(true);
-          }, 1000);
-        }
-      }
-
-      // Show escalation prompt if should escalate (but NOT immediately showing form)
-      if (result.shouldEscalate && !serviceIntent) {
+      // Show escalation prompt after EVERY response (except greetings)
+      if (result.shouldEscalate) {
         setTimeout(() => {
           const escalationMsg = {
             id: (Date.now() + 2).toString(),
             role: 'assistant',
-            content: "I can provide general information, but for more specific guidance tailored to your situation, I can connect you with a Sleek incorporation expert. Would you like to speak with them?",
+            content: "Would you like me to connect you with a Sleek incorporation expert who can provide personalized guidance and help you get started?",
             timestamp: new Date().toISOString()
           };
           setMessages(prev => [...prev, escalationMsg]);
           setShowEscalationPrompt(true);
-        }, 1000);
+        }, 800);
       }
 
     } catch (error) {

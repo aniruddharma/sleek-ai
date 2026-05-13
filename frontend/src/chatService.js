@@ -1,20 +1,54 @@
 import { SLEEK_KNOWLEDGE_BASE } from './knowledgeBase';
 
-// Fallback responses for common questions
+// Fallback responses for common questions - CRISP FORMAT
 const FALLBACK_RESPONSES = {
-  'remote': "Yes! You can absolutely incorporate remotely in Singapore. The entire process can be done online through a Corporate Service Provider like Sleek - no need to visit Singapore physically. You'll need to appoint a local resident director (or use our nominee director service), provide your documents digitally, and we handle everything from S$650.",
+  'remote': {
+    answer: "✅ Yes! You can incorporate 100% remotely in Singapore.\n\n• Complete process done online\n• No need to visit Singapore\n• Digital document signing\n• Setup in 1-3 business days",
+    service: "Sleek handles remote incorporation from S$650, including company secretary and registered address.",
+    offering: "remote_incorporation"
+  },
   
-  'cost': "Singapore company incorporation costs vary:\n• DIY via Bizfile: S$315 (government fees only)\n• With Sleek basic package: From S$650 (includes company secretary + registered address)\n• For foreigners needing nominee director: S$3,000-5,000/year\n• Annual compliance: S$1,000-2,000\n\nMost startups choose our S$650 package for a complete, hassle-free setup in 1-3 days.",
+  'cost': {
+    answer: "💰 Singapore Incorporation Costs:\n\n• DIY (Bizfile): S$315 government fees\n• With Sleek: From S$650 (all-inclusive)\n• For foreigners: S$3,000-5,000 (with nominee director)\n• Annual compliance: S$1,000-2,000",
+    service: "Sleek's S$650 package includes company secretary, registered address, and full support—no hidden fees.",
+    offering: "incorporation_package"
+  },
   
-  'nominee': "If you're a foreigner without a Singapore resident director, you'll need a nominee director - this is a legal requirement. Sleek provides professional nominee director services from S$1,500/year. They fulfill the residency requirement while you maintain full control of your business. This is very common for foreign founders.",
+  'nominee': {
+    answer: "👔 Nominee Director Requirement:\n\n• Required if you're a foreigner with no Singapore resident director\n• Legal compliance necessity\n• You maintain full business control\n• Common practice for foreign founders",
+    service: "Sleek provides professional nominee director services from S$1,500/year with full legal compliance.",
+    offering: "nominee_director"
+  },
   
-  'visa': "For foreigners relocating to Singapore, main visa options are:\n• Employment Pass (EP): For professionals earning S$5,000+/month\n• EntrePass: For innovative startup founders\n• Dependant Pass + Letter of Consent: For spouses\n\nSleek can assist with Employment Pass applications. If you're not relocating immediately, you can still incorporate remotely and manage the business from abroad.",
+  'visa': {
+    answer: "🛂 Visa Options for Foreign Founders:\n\n• Employment Pass (EP): S$5,000+/month salary\n• EntrePass: For innovative startups\n• Dependant Pass + LoC: For spouses\n• Or manage remotely without relocating",
+    service: "Sleek assists with Employment Pass applications to help you relocate to Singapore smoothly.",
+    offering: "visa_support"
+  },
   
-  'timeline': "Singapore incorporation is fast! Timeline:\n• Name approval: 1 hour (if approved immediately)\n• Company registration: 1-3 business days\n• Total with Sleek: Usually 1-5 business days if all documents are ready\n• Bank account opening: Additional 1-2 weeks\n\nWith Sleek, we can often complete incorporation in just 1 day!",
+  'timeline': {
+    answer: "⚡ Singapore Incorporation Timeline:\n\n• Name approval: 1 hour\n• Company registration: 1-3 business days\n• Bank account: Additional 1-2 weeks\n• Total with Sleek: Often completed in 1 day!",
+    service: "With Sleek's streamlined process, most incorporations are complete within 24-48 hours.",
+    offering: "fast_incorporation"
+  },
   
-  'foreigner': "Absolutely! Singapore welcomes 100% foreign ownership. Here's what you need:\n• Can incorporate entirely remotely through Sleek\n• Must have one local resident director (we provide nominee director service)\n• Minimum capital: Just S$1\n• No need to visit Singapore\n• Costs from S$3,000 including nominee director\n\nThousands of foreign entrepreneurs have successfully incorporated through Sleek.",
+  'foreigner': {
+    answer: "🌍 Foreigners Can Own 100% of Singapore Company:\n\n• No need to visit Singapore\n• Must appoint local resident director (we provide)\n• Minimum capital: Just S$1\n• Manage business remotely\n• Thousands of foreign founders use Sleek",
+    service: "Sleek's foreigner package (S$3,000) includes nominee director, secretary, and registered address—everything you need.",
+    offering: "foreigner_package"
+  },
   
-  'default': "Singapore is one of the best places to start a business! With Sleek, you can incorporate from S$650, including company secretary and registered address. The process takes just 1-3 business days. We handle everything - company registration, compliance, nominee directors if needed, and ongoing support. Would you like to know about specific requirements, costs, or the incorporation process?"
+  'requirements': {
+    answer: "📋 Singapore Company Requirements:\n\n• At least 1 local resident director\n• At least 1 shareholder (can be foreign)\n• Company secretary (within 6 months)\n• Registered Singapore address\n• Minimum S$1 paid-up capital",
+    service: "Sleek provides all compliance requirements—director, secretary, and address—in one package.",
+    offering: "compliance_package"
+  },
+  
+  'default': {
+    answer: "🇸🇬 Singapore is ideal for startups:\n\n• 17% corporate tax (lowest in region)\n• Tax exemptions for first 3 years\n• Strong legal framework\n• Quick incorporation (1-3 days)\n• 100% foreign ownership allowed",
+    service: "Sleek makes incorporation simple—from S$650 with full support and compliance.",
+    offering: "incorporation_package"
+  }
 };
 
 const EMERGENT_LLM_KEY = 'sk-emergent-4089639C156304e5cF';
@@ -81,19 +115,37 @@ class ChatService {
       });
 
       let assistantMessage;
+      let serviceOffering = '';
 
       // Try API first (if not already failed)
       if (!this.useAPIfailed) {
         try {
           assistantMessage = await this.callAPI(userMessage);
+          // Detect offering from user message for API responses
+          const responseData = this.getFallbackResponse(userMessage);
+          serviceOffering = responseData.offering || 'general';
         } catch (error) {
           console.warn('API call failed, using fallback:', error);
           this.useAPIfailed = true;
-          assistantMessage = this.getFallbackResponse(userMessage);
+          const fallbackData = this.getFallbackResponse(userMessage);
+          assistantMessage = fallbackData.answer;
+          serviceOffering = fallbackData.offering;
+          
+          // Add service recommendation
+          if (fallbackData.service) {
+            assistantMessage += "\n\n" + fallbackData.service;
+          }
         }
       } else {
         // Use fallback directly
-        assistantMessage = this.getFallbackResponse(userMessage);
+        const fallbackData = this.getFallbackResponse(userMessage);
+        assistantMessage = fallbackData.answer;
+        serviceOffering = fallbackData.offering;
+        
+        // Add service recommendation
+        if (fallbackData.service) {
+          assistantMessage += "\n\n" + fallbackData.service;
+        }
       }
 
       // Add assistant response to history
@@ -102,34 +154,33 @@ class ChatService {
         content: assistantMessage
       });
 
-      // Check if assistant asked a question
-      const isQuestion = assistantMessage.trim().endsWith('?') ||
-                        assistantMessage.toLowerCase().includes('may i know') ||
-                        assistantMessage.toLowerCase().includes('can you tell');
-
-      if (isQuestion && this.clarificationCount < 3) {
-        this.clarificationCount++;
-      }
+      // Always ask to connect with expert after providing answer (unless it's just a greeting)
+      const shouldEscalate = serviceOffering !== 'general';
 
       return {
         response: assistantMessage,
         clarificationCount: this.clarificationCount,
-        shouldEscalate: this.clarificationCount >= 2
+        shouldEscalate: shouldEscalate
       };
 
     } catch (error) {
       console.error('Error in sendMessage:', error);
       // Return fallback even on error
-      const fallbackResponse = this.getFallbackResponse(userMessage);
+      const fallbackData = this.getFallbackResponse(userMessage);
+      let fallbackMessage = fallbackData.answer;
+      if (fallbackData.service) {
+        fallbackMessage += "\n\n" + fallbackData.service;
+      }
+      
       this.conversationHistory.push({
         role: 'assistant',
-        content: fallbackResponse
+        content: fallbackMessage
       });
       
       return {
-        response: fallbackResponse,
+        response: fallbackMessage,
         clarificationCount: this.clarificationCount,
-        shouldEscalate: false
+        shouldEscalate: fallbackData.offering !== 'general'
       };
     }
   }
