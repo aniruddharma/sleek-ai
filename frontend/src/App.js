@@ -13,6 +13,136 @@ const SUGGESTED_PROMPTS = [
   "How much does everything cost?"
 ];
 
+// Inline markdown renderer: handles **bold**, S$prices, durations, percentages
+const renderInline = (text, keyPrefix) => {
+  // Step 1: split by **bold**
+  const boldParts = text.split(/(\*\*[^*]+\*\*)/g);
+  const nodes = [];
+  boldParts.forEach((part, bIdx) => {
+    if (!part) return;
+    if (part.startsWith("**") && part.endsWith("**")) {
+      nodes.push(
+        <strong key={`${keyPrefix}-b-${bIdx}`}>{part.slice(2, -2)}</strong>
+      );
+      return;
+    }
+    // Highlight prices (S$X, S$X,XXX, S$X.XX) and durations
+    const tokenRegex = /(S\$[\d,]+(?:\.\d+)?|\b\d+(?:-\d+)?\s*(?:business days|days|day|hours|hour|weeks|week|months|month|minutes|minute)\b|\b\d+%)/gi;
+    let lastIdx = 0;
+    let match;
+    let subKey = 0;
+    while ((match = tokenRegex.exec(part)) !== null) {
+      if (match.index > lastIdx) {
+        nodes.push(part.slice(lastIdx, match.index));
+      }
+      const token = match[0];
+      if (/^S\$/.test(token)) {
+        nodes.push(
+          <span key={`${keyPrefix}-p-${bIdx}-${subKey}`} className="price">
+            {token}
+          </span>
+        );
+      } else if (/%$/.test(token)) {
+        nodes.push(
+          <span key={`${keyPrefix}-pc-${bIdx}-${subKey}`} className="price">
+            {token}
+          </span>
+        );
+      } else {
+        nodes.push(
+          <span key={`${keyPrefix}-d-${bIdx}-${subKey}`} className="duration">
+            {token}
+          </span>
+        );
+      }
+      lastIdx = match.index + token.length;
+      subKey++;
+    }
+    if (lastIdx < part.length) {
+      nodes.push(part.slice(lastIdx));
+    }
+  });
+  return nodes;
+};
+
+const formatBotMessage = (content) => {
+  const lines = content.split("\n");
+  const blocks = [];
+  let listBuf = [];
+
+  const flushList = () => {
+    if (listBuf.length) {
+      blocks.push(
+        <ul key={`ul-${blocks.length}`}>{listBuf}</ul>
+      );
+      listBuf = [];
+    }
+  };
+
+  lines.forEach((raw, idx) => {
+    const line = raw.trim();
+    if (!line) {
+      flushList();
+      blocks.push(<div key={`sp-${idx}`} style={{ height: "6px" }} />);
+      return;
+    }
+
+    // Bullet line
+    if (/^[•\-]\s+/.test(line)) {
+      const inner = line.replace(/^[•\-]\s+/, "");
+      listBuf.push(
+        <li key={`li-${idx}`}>{renderInline(inner, `li-${idx}`)}</li>
+      );
+      return;
+    }
+
+    flushList();
+
+    // STEP heading (e.g. "**STEP 1: Company Name Reservation**")
+    const stepMatch = line.match(/^\*\*STEP\s+\d+[^*]*\*\*$/i);
+    if (stepMatch) {
+      blocks.push(
+        <div key={`step-${idx}`} className="section-title">
+          {line.replace(/\*\*/g, "")}
+        </div>
+      );
+      return;
+    }
+
+    // Full-line bold = section header (e.g. "**Detailed Breakdown:**")
+    const fullBold = line.match(/^\*\*(.+?)\*\*:?$/);
+    if (fullBold) {
+      blocks.push(
+        <h3 key={`h3-${idx}`}>{fullBold[1].replace(/:$/, "")}</h3>
+      );
+      return;
+    }
+
+    // First non-empty line that starts with an emoji + short title → section title
+    if (
+      idx === 0 &&
+      /^[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}⚡✅📝💰⏰📋🏢🎯🚀🔑📌💡]/u.test(line) &&
+      line.length < 80
+    ) {
+      blocks.push(
+        <div key={`title-${idx}`} className="section-title">
+          {renderInline(line, `title-${idx}`)}
+        </div>
+      );
+      return;
+    }
+
+    blocks.push(
+      <p key={`p-${idx}`} style={{ margin: "4px 0" }}>
+        {renderInline(line, `p-${idx}`)}
+      </p>
+    );
+  });
+
+  flushList();
+  return blocks;
+};
+
 function App() {
   const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState("");
@@ -449,12 +579,14 @@ function App() {
                         {msg.role === 'assistant' ? '🤖' : '👤'}
                       </div>
                       <div className={`message-content ${msg.role}`}>
-                        {msg.content.split('\n').map((line, idx) => (
-                          <span key={idx}>
-                            {line}
-                            {idx < msg.content.split('\n').length - 1 && <br />}
-                          </span>
-                        ))}
+                        {msg.role === 'assistant'
+                          ? formatBotMessage(msg.content)
+                          : msg.content.split('\n').map((line, idx, arr) => (
+                              <span key={idx}>
+                                {line}
+                                {idx < arr.length - 1 && <br />}
+                              </span>
+                            ))}
                       </div>
                     </div>
                   ))}

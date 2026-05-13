@@ -151,7 +151,7 @@ class ChatService {
     this.sessionId = this.generateSessionId();
     this.conversationHistory = [];
     this.clarificationCount = 0;
-    this.useAPIfailed = false;
+    this.useAPIfailed = true;  // External LLM endpoint deprecated; use local intent matching
     this.responseCount = 0;
   }
 
@@ -167,20 +167,25 @@ class ChatService {
 
     for (const [category, data] of Object.entries(TRAINED_RESPONSES)) {
       let score = 0;
+      let longestMatch = 0;
       for (const keyword of data.keywords) {
         if (messageLower.includes(keyword)) {
           score += 1;
+          // Weight longer / more specific keyword matches higher
+          if (keyword.length > longestMatch) longestMatch = keyword.length;
         }
       }
-      const normalizedScore = score / data.keywords.length;
-      
-      if (normalizedScore > highestScore) {
-        highestScore = normalizedScore;
-        bestMatch = { category, data, score: normalizedScore };
+      // Composite score: absolute matches + bonus for keyword specificity
+      const finalScore = score + (longestMatch / 100);
+
+      if (finalScore > highestScore) {
+        highestScore = finalScore;
+        bestMatch = { category, data, score: finalScore };
       }
     }
 
-    if (bestMatch && bestMatch.score > 0.02) {
+    // Match if at least one keyword hit (score >= 1)
+    if (bestMatch && bestMatch.score >= 1) {
       return { ...bestMatch.data, category: bestMatch.category, detectedConfidence: bestMatch.score };
     }
 
