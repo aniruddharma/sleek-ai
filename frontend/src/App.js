@@ -617,20 +617,3 @@ function App() {
 }
 
 export default App;
-
-        </AnimatePresence>
-
-        {/* Widget Trigger Button */}
-        <button
-          className="chat-widget-trigger"
-          data-testid="sleek-widget-trigger"
-          onClick={toggleWidget}
-        >
-          <MessageCircle size={28} />
-        </button>
-      </div>
-    </div>
-  );
-}
-
-export default App;
