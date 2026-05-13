@@ -100,7 +100,12 @@ function App() {
 
       setMessages(prev => [...prev, aiMsg]);
 
-      // ALWAYS show agent connection after answer (remove decline check)
+      // Track category for follow-up suggestions
+      if (result.serviceOffering) {
+        setLastQueryCategory(result.serviceOffering);
+      }
+
+      // ALWAYS show agent connection after answer
       if (result.shouldEscalate) {
         setTimeout(() => {
           const escalationMsg = {
@@ -135,17 +140,117 @@ function App() {
       };
       setMessages(prev => [...prev, responseMsg]);
       setShowLeadForm(true);
+      setShowFollowUpPrompts(false);
     } else {
-      // User wants to continue with AI - don't ask again
+      // User wants to continue - show follow-up questions
       setUserDeclinedAgent(true);
       const responseMsg = {
         id: Date.now().toString(),
         role: 'assistant',
-        content: "No problem! I'm here to help. What else would you like to know?",
+        content: "No problem! I'm here to help. Here are some related questions you might want to explore:",
         timestamp: new Date().toISOString()
       };
       setMessages(prev => [...prev, responseMsg]);
+      setShowFollowUpPrompts(true);
     }
+  };
+
+  // Get contextual follow-up questions based on last category
+  const getFollowUpQuestions = () => {
+    const followUpMap = {
+      'incorporation': [
+        "How much does incorporation cost?",
+        "Can I incorporate remotely?",
+        "How long does the process take?",
+        "What documents do I need?"
+      ],
+      'remote_incorporation': [
+        "Do I need a nominee director?",
+        "What are the costs involved?",
+        "Can I open a bank account remotely?",
+        "What visa options are available?"
+      ],
+      'cost_pricing': [
+        "What's included in the package?",
+        "Are there any hidden fees?",
+        "Can I incorporate remotely?",
+        "How long does setup take?"
+      ],
+      'nominee_director': [
+        "How much does a nominee director cost?",
+        "Can I be my own director later?",
+        "What are the visa requirements?",
+        "Do I need to visit Singapore?"
+      ],
+      'visa_relocation': [
+        "Can I incorporate without relocating?",
+        "What's the Employment Pass requirement?",
+        "How much does incorporation cost?",
+        "Do I need a nominee director?"
+      ],
+      'timeline_duration': [
+        "What documents do I need?",
+        "How much does it cost?",
+        "Can I expedite the process?",
+        "When can I open a bank account?"
+      ],
+      'foreigner_specific': [
+        "Do I need a nominee director?",
+        "Can I incorporate remotely?",
+        "What visa options do I have?",
+        "How much will it cost me?"
+      ],
+      'requirements_documents': [
+        "Can I provide documents digitally?",
+        "How long does registration take?",
+        "What are the costs involved?",
+        "Can I incorporate remotely?"
+      ],
+      'process_steps': [
+        "How long does each step take?",
+        "Can Sleek handle everything for me?",
+        "What does it cost?",
+        "Do I need to visit Singapore?"
+      ],
+      'banking': [
+        "Can I open an account remotely?",
+        "Which bank is best for startups?",
+        "What's the minimum balance required?",
+        "How long does approval take?"
+      ],
+      'company_secretary': [
+        "Is secretary included in Sleek packages?",
+        "What does a secretary actually do?",
+        "How much does this cost separately?",
+        "When must I appoint one?"
+      ],
+      'tax_gst': [
+        "When do I need to register for GST?",
+        "What tax exemptions can I get?",
+        "How do I file taxes?",
+        "What's the corporate tax rate?"
+      ],
+      'business_structures': [
+        "Why is Pte Ltd most popular?",
+        "What are the advantages?",
+        "How much does Pte Ltd cost?",
+        "Can foreigners own 100%?"
+      ],
+      'low_confidence': [
+        "Tell me about incorporation costs",
+        "Can foreigners incorporate in Singapore?",
+        "How long does incorporation take?",
+        "What are the requirements?"
+      ],
+      'general': [
+        "How much does incorporation cost?",
+        "Can I incorporate remotely?",
+        "What if I'm a foreigner?",
+        "How long does it take?"
+      ]
+    };
+
+    return followUpMap[lastQueryCategory] || followUpMap['general'];
   };
 
   const handleSubmitLeadForm = async (e) => {
@@ -462,15 +567,18 @@ function App() {
                 </div>
               )}
 
-              {/* Suggested Prompts */}
-              {messages.length === 1 && !isLoading && !showLeadForm && !showEscalationPrompt && (
+              {/* Suggested Prompts - Initial or Follow-up */}
+              {(messages.length === 1 || showFollowUpPrompts) && !isLoading && !showLeadForm && !showEscalationPrompt && (
                 <div className="suggested-prompts">
-                  {SUGGESTED_PROMPTS.map((prompt, idx) => (
+                  {(showFollowUpPrompts ? getFollowUpQuestions() : SUGGESTED_PROMPTS).map((prompt, idx) => (
                     <button
                       key={idx}
                       className="prompt-pill"
                       data-testid={`suggested-prompt-${idx}`}
-                      onClick={() => handlePromptClick(prompt)}
+                      onClick={() => {
+                        handlePromptClick(prompt);
+                        setShowFollowUpPrompts(false);
+                      }}
                     >
                       {prompt}
                     </button>
