@@ -59,11 +59,26 @@ class ChatService {
     this.conversationHistory = [];
     this.clarificationCount = 0;
     this.useAPIfailed = false;
-    this.lastResponse = ''; // Track last response to avoid duplicates
+    this.responseCount = 0; // Track number of AI responses
   }
 
   generateSessionId() {
     return `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  }
+
+  // Detect purchase intent or help needed
+  detectPurchaseIntent(userMessage) {
+    const messageLower = userMessage.toLowerCase();
+    
+    const purchaseKeywords = [
+      'help me', 'assist me', 'i need', 'i want', 'interested',
+      'sign up', 'register', 'start now', 'get started', 'begin',
+      'how do i', 'can you help', 'need help', 'assist',
+      'price', 'cost', 'package', 'service', 'buy', 'purchase',
+      'contact', 'talk to', 'speak with', 'call me', 'reach out'
+    ];
+    
+    return purchaseKeywords.some(keyword => messageLower.includes(keyword));
   }
 
   // Get fallback response based on question keywords
@@ -154,13 +169,20 @@ class ChatService {
         content: assistantMessage
       });
 
-      // Always ask to connect with expert after providing answer (unless it's just a greeting)
-      const shouldEscalate = serviceOffering !== 'general';
+      // Increment response count
+      this.responseCount++;
+
+      // Decide if should escalate:
+      // 1. If user shows purchase intent
+      // 2. OR if we've given 2+ responses and it's not just a greeting
+      const hasPurchaseIntent = this.detectPurchaseIntent(userMessage);
+      const shouldEscalate = hasPurchaseIntent || (this.responseCount >= 2 && serviceOffering !== 'general');
 
       return {
         response: assistantMessage,
         clarificationCount: this.clarificationCount,
-        shouldEscalate: shouldEscalate
+        shouldEscalate: shouldEscalate,
+        hasPurchaseIntent: hasPurchaseIntent
       };
 
     } catch (error) {
@@ -180,7 +202,8 @@ class ChatService {
       return {
         response: fallbackMessage,
         clarificationCount: this.clarificationCount,
-        shouldEscalate: fallbackData.offering !== 'general'
+        shouldEscalate: fallbackData.offering !== 'general',
+        hasPurchaseIntent: false
       };
     }
   }
@@ -249,8 +272,8 @@ class ChatService {
     this.sessionId = this.generateSessionId();
     this.conversationHistory = [];
     this.clarificationCount = 0;
-    this.lastResponse = '';
     this.useAPIfailed = false;
+    this.responseCount = 0;
   }
 }
 

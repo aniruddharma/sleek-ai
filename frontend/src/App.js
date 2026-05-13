@@ -32,6 +32,7 @@ function App() {
   const [error, setError] = useState(null);
   const [pendingServiceRecommendation, setPendingServiceRecommendation] = useState("");
   const [feedbackGiven, setFeedbackGiven] = useState(false);
+  const [userDeclinedAgent, setUserDeclinedAgent] = useState(false); // Track if user said no to agent
   
   const chatServiceRef = useRef(null);
   const messagesEndRef = useRef(null);
@@ -99,13 +100,17 @@ function App() {
 
       setMessages(prev => [...prev, aiMsg]);
 
-      // Show escalation prompt after EVERY response (except greetings)
-      if (result.shouldEscalate) {
+      // Show escalation prompt only if:
+      // 1. User hasn't previously declined AND
+      // 2. (User shows purchase intent OR we've given 2+ responses)
+      if (!userDeclinedAgent && result.shouldEscalate) {
         setTimeout(() => {
           const escalationMsg = {
             id: (Date.now() + 2).toString(),
             role: 'assistant',
-            content: "Would you like me to connect you with a Sleek incorporation expert who can provide personalized guidance and help you get started?",
+            content: result.hasPurchaseIntent 
+              ? "I can help connect you with a Sleek expert who can assist you with this. Would you like to speak with them?"
+              : "Would you like me to connect you with a Sleek incorporation expert for personalized guidance?",
             timestamp: new Date().toISOString()
           };
           setMessages(prev => [...prev, escalationMsg]);
@@ -135,11 +140,12 @@ function App() {
       setMessages(prev => [...prev, responseMsg]);
       setShowLeadForm(true);
     } else {
-      // User wants to continue with AI
+      // User wants to continue with AI - don't ask again
+      setUserDeclinedAgent(true);
       const responseMsg = {
         id: Date.now().toString(),
         role: 'assistant',
-        content: "No problem! I'm here to help. What else would you like to know about Singapore incorporation?",
+        content: "No problem! I'm here to help. What else would you like to know?",
         timestamp: new Date().toISOString()
       };
       setMessages(prev => [...prev, responseMsg]);
