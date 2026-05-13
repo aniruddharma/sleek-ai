@@ -1,11 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import "@/App.css";
-import axios from "axios";
 import { motion, AnimatePresence } from "framer-motion";
 import { MessageCircle, X, Send, CheckCircle } from "lucide-react";
-
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const API = `${BACKEND_URL}/api`;
+import ChatService from "./chatService";
+import { detectServiceIntent, getServiceRecommendation } from "./knowledgeBase";
 
 const SUGGESTED_PROMPTS = [
   "Can I incorporate remotely?",
@@ -16,12 +14,10 @@ const SUGGESTED_PROMPTS = [
 ];
 
 function App() {
-  const [sessionId, setSessionId] = useState(null);
   const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [clarificationCount, setClarificationCount] = useState(0);
   const [showLeadForm, setShowLeadForm] = useState(false);
   const [showHandoff, setShowHandoff] = useState(false);
   const [conversationSummary, setConversationSummary] = useState("");
@@ -32,39 +28,25 @@ function App() {
     nationality: ""
   });
   const [error, setError] = useState(null);
+  
+  const chatServiceRef = useRef(null);
 
-  // Initialize session
+  // Initialize chat service
   useEffect(() => {
-    let timeoutId;
+    chatServiceRef.current = new ChatService();
     
-    const initializeSession = async () => {
-      try {
-        const response = await axios.post(`${API}/chat/sessions`);
-        setSessionId(response.data.session_id);
-
-        // Check if first visit
-        const hasVisited = localStorage.getItem('sleek_has_visited');
-        if (!hasVisited) {
-          timeoutId = setTimeout(() => {
-            setIsOpen(true);
-            sendWelcomeMessage(response.data.session_id);
-            localStorage.setItem('sleek_has_visited', 'true');
-          }, 1000);
-        }
-      } catch (error) {
-        console.error('Error initializing session:', error);
-        setError('Unable to connect to chat service. Please try again later.');
-      }
-    };
-
-    initializeSession();
-    
-    return () => {
-      if (timeoutId) clearTimeout(timeoutId);
-    };
+    // Check if first visit
+    const hasVisited = localStorage.getItem('sleek_has_visited');
+    if (!hasVisited) {
+      setTimeout(() => {
+        setIsOpen(true);
+        sendWelcomeMessage();
+        localStorage.setItem('sleek_has_visited', 'true');
+      }, 1000);
+    }
   }, []);
 
-  const sendWelcomeMessage = (sid) => {
+  const sendWelcomeMessage = () => {
     const welcomeMsg = {
       id: Date.now().toString(),
       role: 'assistant',
@@ -76,12 +58,7 @@ function App() {
 
   const handleSendMessage = async (messageText = null) => {
     const text = messageText || inputMessage.trim();
-    if (!text || isLoading || !sessionId) {
-      if (!sessionId) {
-        setError('Chat session not initialized. Please refresh the page.');
-      }
-      return;
-    }
+    if (!text || isLoading) return;
 
     const userMsg = {
       id: Date.now().toString(),
@@ -96,39 +73,35 @@ function App() {
     setError(null);
 
     try {
-      const response = await axios.post(`${API}/chat/message`, {
-        session_id: sessionId,
-        message: text,
-        clarification_count: clarificationCount
-      });
+      // Call AI service
+      const result = await chatServiceRef.current.sendMessage(text);
 
       const aiMsg = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: response.data.response,
+        content: result.response,
         timestamp: new Date().toISOString()
       };
 
       setMessages(prev => [...prev, aiMsg]);
 
-      // Show service recommendation if any
-      if (response.data.service_recommendation) {
-        const serviceMsg = {
-          id: (Date.now() + 2).toString(),
-          role: 'service',
-          content: response.data.service_recommendation,
-          timestamp: new Date().toISOString()
-        };
-        setMessages(prev => [...prev, serviceMsg]);
+      // Detect service intent
+      const serviceIntent = detectServiceIntent(text);
+      if (serviceIntent) {
+        const recommendation = getServiceRecommendation(serviceIntent);
+        if (recommendation) {
+          const serviceMsg = {
+            id: (Date.now() + 2).toString(),
+            role: 'service',
+            content: recommendation,
+            timestamp: new Date().toISOString()
+          };
+          setMessages(prev => [...prev, serviceMsg]);
+        }
       }
 
-      // Update clarification count from server
-      if (response.data.clarification_count !== undefined) {
-        setClarificationCount(response.data.clarification_count);
-      }
-      
-      // Show lead form if server suggests escalation
-      if (response.data.should_escalate) {
+      // Show lead form if should escalate
+      if (result.shouldEscalate || serviceIntent) {
         setTimeout(() => {
           setShowLeadForm(true);
         }, 1500);
@@ -136,6 +109,7 @@ function App() {
 
     } catch (error) {
       console.error('Error sending message:', error);
+      setError('Unable to connect to AI service. Please try again.');
       const errorMsg = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
@@ -151,34 +125,31 @@ function App() {
 
   const handleSubmitLeadForm = async (e) => {
     e.preventDefault();
-    
-    if (!sessionId) {
-      setError('Session not available. Please refresh and try again.');
-      return;
-    }
-    
     setIsLoading(true);
 
     try {
       // Generate conversation summary
-      const summaryResponse = await axios.post(`${API}/chat/summary`, {
-        session_id: sessionId
-      });
+      const summary = chatServiceRef.current.getConversationSummary();
+      setConversationSummary(summary);
 
-      setConversationSummary(summaryResponse.data.summary);
-
-      // Submit lead
-      await axios.post(`${API}/leads`, {
+      // Store lead in localStorage (in production, you'd send to a backend/form service)
+      const lead = {
         ...leadFormData,
-        conversation_summary: summaryResponse.data.summary,
-        session_id: sessionId
-      });
+        conversation_summary: summary,
+        timestamp: new Date().toISOString()
+      };
+      
+      const existingLeads = JSON.parse(localStorage.getItem('sleek_leads') || '[]');
+      existingLeads.push(lead);
+      localStorage.setItem('sleek_leads', JSON.stringify(existingLeads));
+
+      console.log('Lead captured:', lead);
 
       setShowLeadForm(false);
       setShowHandoff(true);
     } catch (error) {
       console.error('Error submitting lead:', error);
-      setError('Unable to submit form. Please try again or contact support@sleek.com');
+      setError('Unable to submit form. Please contact us at hello@sleek.com');
     } finally {
       setIsLoading(false);
     }
@@ -190,8 +161,8 @@ function App() {
 
   const toggleWidget = () => {
     setIsOpen(!isOpen);
-    if (!isOpen && messages.length === 0 && sessionId) {
-      sendWelcomeMessage(sessionId);
+    if (!isOpen && messages.length === 0) {
+      sendWelcomeMessage();
     }
   };
 
