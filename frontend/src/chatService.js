@@ -29,7 +29,7 @@ class ChatService {
       }));
 
       // Call Claude API via Emergent integrations
-      const response = await fetch('https://api.emergentagi.com/v1/chat/completions', {
+      const response = await fetch('https://api.emergentmind.com/openai/v1/chat/completions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
