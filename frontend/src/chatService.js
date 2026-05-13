@@ -1,6 +1,6 @@
 import { SLEEK_KNOWLEDGE_BASE } from './knowledgeBase';
 
-// Using Emergent LLM Key - User can replace with their own Claude API key
+// Using Emergent LLM Key
 const EMERGENT_LLM_KEY = 'sk-emergent-4089639C156304e5cF';
 
 class ChatService {
@@ -22,38 +22,49 @@ class ChatService {
         content: userMessage
       });
 
-      // Build conversation context
-      const messages = this.conversationHistory.map(msg => ({
-        role: msg.role === 'assistant' ? 'assistant' : 'user',
-        content: msg.content
-      }));
+      // Build messages array for API
+      const messages = [
+        {
+          role: 'system',
+          content: `${SLEEK_KNOWLEDGE_BASE}\n\nYou have asked ${this.clarificationCount} clarification questions so far. Maximum is 3.`
+        },
+        ...this.conversationHistory.map(msg => ({
+          role: msg.role,
+          content: msg.content
+        }))
+      ];
 
-      // Call Claude API via Emergent integrations
-      const response = await fetch('https://api.emergentmind.com/openai/v1/chat/completions', {
+      // Call Emergent LLM API (OpenAI-compatible endpoint)
+      const response = await fetch('https://api.emergentmind.com/v1/chat/completions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${EMERGENT_LLM_KEY}`
+          'Authorization': `Bearer ${EMERGENT_LLM_KEY}`,
+          'HTTP-Referer': window.location.href,
+          'X-Title': 'Sleek Start AI Assistant'
         },
         body: JSON.stringify({
           model: 'anthropic/claude-sonnet-4-5-20250929',
-          messages: [
-            {
-              role: 'system',
-              content: `${SLEEK_KNOWLEDGE_BASE}\n\nYou have asked ${this.clarificationCount} clarification questions so far. Maximum is 3.`
-            },
-            ...messages
-          ],
-          max_tokens: 800,
-          temperature: 0.7
+          messages: messages,
+          max_tokens: 1000,
+          temperature: 0.7,
+          stream: false
         })
       });
 
       if (!response.ok) {
-        throw new Error(`API error: ${response.status}`);
+        const errorData = await response.json().catch(() => ({}));
+        console.error('API Error:', response.status, errorData);
+        throw new Error(`API error: ${response.status} - ${errorData.error?.message || 'Unknown error'}`);
       }
 
       const data = await response.json();
+      
+      if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+        console.error('Invalid API response:', data);
+        throw new Error('Invalid response format from API');
+      }
+
       const assistantMessage = data.choices[0].message.content;
 
       // Add assistant response to history
